@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevDocs | Modern Static Guide</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="mobile-header">
+        <button id="menu-toggle" aria-label="Toggle Navigation">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <span class="logo">DevDocs</span>
+    </header>
+
+    <div class="app-container">
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>DevDocs</h3>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#intro" class="active">1. Introduction</a></li>
+                <li><a href="#installation">2. Installation</a></li>
+                <li><a href="#usage">3. Basic Usage</a></li>
+                <li><a href="#configuration">4. Configuration</a></li>
+                <li><a href="#api">5. API Reference</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <section id="intro">
+                <h1>Introduction</h1>
+                <p>Welcome to the <strong>DevDocs</strong>. This is a minimalist, responsive documentation template designed to look like Notion or GitBook.</p>
+                <p>It is built entirely with <code>HTML5</code>, <code>CSS3</code>, and vanilla <code>JavaScript</code>.</p>
+            </section>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                <p>To get started, clone the repository to your local machine.</p>
+                <pre><code>git clone https://github.com/username/project.git
+cd project
+npm install</code></pre>
+            </section>
+
+            <section id="usage">
+                <h2>Basic Usage</h2>
+                <p>Run the build command to compile your static assets.</p>
+                <blockquote>
+                    <strong>Note:</strong> Ensure you have Node.js version 14 or higher installed.
+                </blockquote>
+            </section>
+
+            <section id="configuration">
+                <h2>Configuration</h2>
+                <p>You can configure the project by editing the <code>config.json</code> file.</p>
+            </section>
+        </main>
+    </div>
+
+    <div class="chat-widget">
+        <button id="chat-toggle-btn" class="chat-toggle-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+
+        <div id="chat-window" class="chat-window hidden">
+            <div class="chat-header">
+                <span>AI Assistant</span>
+                <button id="close-chat">×</button>
+            </div>
+            
+            <div id="api-key-container" class="api-key-container">
+                <p>Enter OpenAI API Key to chat with this guide:</p>
+                <input type="password" id="api-key-input" placeholder="sk-..." />
+                <button id="save-key-btn">Start Chat</button>
+            </div>
+
+            <div id="chat-interface" class="chat-interface hidden">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message bot">
+                        Hello! I've read the documentation on this page. Ask me anything about it.
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="user-input" placeholder="Ask a question..." />
+                    <button id="send-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
