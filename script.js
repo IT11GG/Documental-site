@@ -1,16 +1,11 @@
 /*
-  script.js містить логіку для: 
-  – авторизації адміністратора та вмикання режиму редагування;
-  – збереження зміненого контенту в localStorage;
-  – інтеграції з Gemini API для чату з ШІ (flash-модель);
-  – відкриття та закриття модального вікна чату та вікна авторизації.
-
-  УВАГА! Включення секретного ключа безпосередньо у коді є небезпечною практикою, 
-  але для цього демонстраційного проєкту ключ вставлено у відкритому вигляді.
+  Логіка сайту: авторизація адміністратора, керування посібниками,
+  форматування тексту, вибір іконки для теми, інтеграція з Gemini API
+  і збереження даних у localStorage.
+  УВАГА! API‑ключ у коді є публічним лише для демонстрації.
 */
-
 document.addEventListener('DOMContentLoaded', () => {
-  // Елементи для авторизації
+  // Елементи авторизації
   const loginButton = document.getElementById('login-button');
   const adminButton = document.getElementById('admin-button');
   const loginModal = document.getElementById('login-modal');
@@ -19,7 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
   const saveButton = document.getElementById('save-button');
-  const contentArea = document.getElementById('content-area');
+
+  // Елементи посібника
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const articleListEl = document.getElementById('article-list');
+  const newArticleButton = document.getElementById('new-article-button');
+  const articleTitleEl = document.getElementById('article-title');
+  const articleDescriptionEl = document.getElementById('article-description');
+  const articleContentEl = document.getElementById('article-content');
+  const articleIconEl = document.getElementById('article-icon');
+  const editorToolbar = document.getElementById('editor-toolbar');
+  const iconInput = document.getElementById('icon-input');
 
   // Елементи чату
   const chatToggle = document.getElementById('chat-toggle');
@@ -29,89 +35,232 @@ document.addEventListener('DOMContentLoaded', () => {
   const userInput = document.getElementById('user-input');
   const chatMessages = document.getElementById('chat-messages');
 
-  // Відновити збережений контент при завантаженні сторінки
-  const savedContent = localStorage.getItem('savedContent');
-  if (savedContent) {
-    contentArea.innerHTML = savedContent;
+  let isAdmin = false;
+  let articles = [];
+  let currentArticleId = null;
+
+  // Завантажити посібники з localStorage
+  function loadArticles() {
+    try {
+      articles = JSON.parse(localStorage.getItem('articles')) || [];
+    } catch {
+      articles = [];
+    }
+  }
+  function saveArticles() {
+    localStorage.setItem('articles', JSON.stringify(articles));
   }
 
-  /**
-   * Показати модальне вікно авторизації
-   */
+  // Відобразити список посібників
+  function renderArticleList() {
+    articleListEl.innerHTML = '';
+    if (articles.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.textContent = 'Немає посібників';
+      emptyMsg.style.color = '#666666';
+      articleListEl.appendChild(emptyMsg);
+    } else {
+      articles.forEach((article) => {
+        const item = document.createElement('div');
+        item.classList.add('article-item');
+        if (article.id === currentArticleId) {
+          item.classList.add('active');
+        }
+        item.innerHTML =
+          '<strong>' +
+          article.title +
+          '</strong><br/><small>' +
+          (article.description || '') +
+          '</small>';
+        item.addEventListener('click', () => {
+          selectArticle(article.id);
+        });
+        articleListEl.appendChild(item);
+      });
+    }
+    if (isAdmin) {
+      newArticleButton.classList.remove('hidden');
+    } else {
+      newArticleButton.classList.add('hidden');
+    }
+  }
+
+  // Відобразити вибрану статтю
+  function selectArticle(id) {
+    const article = articles.find((a) => a.id === id);
+    if (!article) return;
+    currentArticleId = id;
+    Array.from(articleListEl.children).forEach((child) =>
+      child.classList.remove('active')
+    );
+    const index = articles.findIndex((a) => a.id === id);
+    const activeEl = articleListEl.children[index];
+    if (activeEl) activeEl.classList.add('active');
+
+    articleTitleEl.textContent = article.title;
+    articleDescriptionEl.textContent = article.description;
+    if (article.icon) {
+      articleIconEl.src = article.icon;
+      articleIconEl.classList.remove('hidden');
+    } else {
+      articleIconEl.classList.add('hidden');
+    }
+    articleContentEl.innerHTML = article.content || '';
+    if (isAdmin) {
+      articleContentEl.setAttribute('contenteditable', 'true');
+      editorToolbar.classList.remove('hidden');
+    } else {
+      articleContentEl.setAttribute('contenteditable', 'false');
+      editorToolbar.classList.add('hidden');
+    }
+  }
+
+  // Створити нову статтю
+  function createNewArticle() {
+    const title = prompt('Введіть назву посібника');
+    if (!title) return;
+    const description = prompt('Введіть короткий опис (необов’язково)') || '';
+    const id = Date.now();
+    const newArticle = {
+      id,
+      title,
+      description,
+      icon: '',
+      content: '<p>Новий посібник...</p>',
+    };
+    articles.push(newArticle);
+    saveArticles();
+    renderArticleList();
+    selectArticle(id);
+  }
+
+  // Зберегти поточну статтю
+  function saveCurrentArticle() {
+    if (!isAdmin || currentArticleId === null) return;
+    const article = articles.find((a) => a.id === currentArticleId);
+    if (!article) return;
+    article.title = articleTitleEl.textContent;
+    article.description = articleDescriptionEl.textContent;
+    article.content = articleContentEl.innerHTML;
+    saveArticles();
+    renderArticleList();
+  }
+
+  // Перемикання бічної панелі
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+  });
+
+  newArticleButton.addEventListener('click', () => {
+    createNewArticle();
+  });
+
+  saveButton.addEventListener('click', () => {
+    saveCurrentArticle();
+    alert('Зміни збережено.');
+  });
+
+  // Авторизація
   loginButton.addEventListener('click', () => {
     loginModal.classList.remove('hidden');
   });
-
-  /**
-   * Скасувати авторизацію та сховати модальне вікно
-   */
   loginCancel.addEventListener('click', () => {
     loginModal.classList.add('hidden');
     usernameInput.value = '';
     passwordInput.value = '';
   });
-
-  /**
-   * Перевірити облікові дані. Якщо вони правильні, активувати режим редагування.
-   */
   loginSubmit.addEventListener('click', () => {
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
     if (username === 'admin' && password === 'Luka@2016') {
-      // Авторизація успішна
+      isAdmin = true;
       loginModal.classList.add('hidden');
       loginButton.classList.add('hidden');
       adminButton.classList.remove('hidden');
       saveButton.classList.remove('hidden');
-      enableEditing();
+      newArticleButton.classList.remove('hidden');
+      if (currentArticleId !== null) {
+        articleContentEl.setAttribute('contenteditable', 'true');
+        editorToolbar.classList.remove('hidden');
+      }
     } else {
       alert('Неправильні облікові дані.');
     }
   });
 
-  /**
-   * Вмикає режим редагування для контенту, роблячи елементи редагованими.
-   */
-  function enableEditing() {
-    // Увімкнути атрибут contenteditable для заголовків та абзаців
-    contentArea.querySelectorAll('section, p, h2').forEach((elem) => {
-      elem.setAttribute('contenteditable', 'true');
-    });
-  }
-
-  /**
-   * Зберегти змінений контент у локальному сховищі браузера
-   */
-  saveButton.addEventListener('click', () => {
-    const newContent = contentArea.innerHTML;
-    localStorage.setItem('savedContent', newContent);
-    alert('Зміни збережено.');
+  adminButton.addEventListener('click', () => {
+    if (!isAdmin) return;
+    editorToolbar.classList.toggle('hidden');
   });
 
-  /**
-   * Відкрити вікно чату
-   */
+  // Форматування тексту
+  editorToolbar.addEventListener('click', (e) => {
+    const command = e.target.getAttribute('data-command');
+    if (command) {
+      document.execCommand(command, false, null);
+      e.preventDefault();
+    }
+  });
+
+  // Завантаження іконки
+  iconInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      const dataUrl = evt.target.result.toString();
+      if (currentArticleId !== null) {
+        const article = articles.find((a) => a.id === currentArticleId);
+        if (article) {
+          article.icon = dataUrl;
+          articleIconEl.src = dataUrl;
+          articleIconEl.classList.remove('hidden');
+          saveArticles();
+          renderArticleList();
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Початкове завантаження
+  loadArticles();
+  renderArticleList();
+  if (articles.length > 0) {
+    selectArticle(articles[0].id);
+  }
+
+  // Чат: відкриття і закриття
   chatToggle.addEventListener('click', () => {
     chatContainer.classList.remove('hidden');
   });
-
-  /**
-   * Закрити вікно чату
-   */
   chatClose.addEventListener('click', () => {
     chatContainer.classList.add('hidden');
   });
 
-  /**
-   * Надіслати повідомлення при натисканні кнопки
-   */
+  // Чат: надсилання
+  function addMessage(text, sender) {
+    const msg = document.createElement('div');
+    msg.classList.add('message', sender);
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  async function sendMessage() {
+    const query = userInput.value.trim();
+    if (!query) return;
+    addMessage(query, 'user');
+    userInput.value = '';
+    try {
+      const response = await callGeminiAPI(query);
+      addMessage(response, 'assistant');
+    } catch {
+      addMessage('Помилка при отриманні відповіді.', 'assistant');
+    }
+  }
   sendButton.addEventListener('click', () => {
     sendMessage();
   });
-
-  /**
-   * Надіслати повідомлення при натисканні Enter
-   */
   userInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -119,56 +268,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /**
-   * Додає повідомлення у вікно чату
-   * @param {string} text Текст повідомлення
-   * @param {string} sender Відправник ('user' або 'assistant')
-   */
-  function addMessage(text, sender) {
-    const msg = document.createElement('div');
-    msg.classList.add('message', sender);
-    msg.textContent = text;
-    chatMessages.appendChild(msg);
-    // Автопрокрутка вниз
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  /**
-   * Відправити запит до ШІ та відобразити відповідь
-   */
-  async function sendMessage() {
-    const query = userInput.value.trim();
-    if (!query) {
-      return;
-    }
-    // Додати повідомлення користувача
-    addMessage(query, 'user');
-    userInput.value = '';
-    try {
-      // Отримати відповідь від моделі Gemini
-      const response = await callGeminiAPI(query);
-      addMessage(response, 'assistant');
-    } catch (error) {
-      addMessage('Помилка при отриманні відповіді.', 'assistant');
-    }
-  }
-
-  /**
-   * Запит до Gemini API (модель gemini-1.5-flash)
-   * @param {string} prompt Запит користувача
-   * @returns {Promise<string>} Відповідь від ШІ
-   */
+  // Виклик Gemini API
   async function callGeminiAPI(prompt) {
-    // УВАГА! Збереження ключа у відкритому коді небезпечно. Для реального проєкту
-    // використовуйте серверну частину або змінні оточення для захисту ключа.
     const apiKey = 'AIzaSyDVfi0aGOBxzXbHdkNOAwPKloU13YymJJ4';
     const url =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' +
-      encodeURIComponent(apiKey);
-    const body = {
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    const payload = {
       contents: [
         {
-          parts: [{ text: prompt }],
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
         },
       ],
     };
@@ -176,14 +288,13 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
-    // Обробка відповіді: вибрати текст з першого кандидата
     if (data && data.candidates && data.candidates.length > 0) {
       const parts = data.candidates[0].content.parts;
-      // Поєднати всі частини тексту, якщо вони є
       return parts.map((p) => p.text).join('\n');
     }
     return 'Без відповіді.';
