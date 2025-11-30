@@ -1,97 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevDocs | Modern Static Guide</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
-    <header class="mobile-header">
-        <button id="menu-toggle" aria-label="Toggle Navigation">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-        <span class="logo">DevDocs</span>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Посібник</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Верхній заголовок з назвою сайту та кнопками навігації -->
+    <header class="header">
+      <div class="logo">Мій&nbsp;Посібник</div>
+      <nav class="nav">
+        <!-- Кнопка для переходу у режим редагування з’являється після авторизації -->
+        <button id="admin-button" class="admin-button hidden">Редагувати</button>
+        <!-- Кнопка входу для адміністратора -->
+        <button id="login-button" class="login-button">Увійти</button>
+      </nav>
     </header>
 
-    <div class="app-container">
-        <nav id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h3>DevDocs</h3>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#intro" class="active">1. Introduction</a></li>
-                <li><a href="#installation">2. Installation</a></li>
-                <li><a href="#usage">3. Basic Usage</a></li>
-                <li><a href="#configuration">4. Configuration</a></li>
-                <li><a href="#api">5. API Reference</a></li>
-            </ul>
-        </nav>
-
-        <main class="content">
-            <section id="intro">
-                <h1>Introduction</h1>
-                <p>Welcome to the <strong>DevDocs</strong>. This is a minimalist, responsive documentation template designed to look like Notion or GitBook.</p>
-                <p>It is built entirely with <code>HTML5</code>, <code>CSS3</code>, and vanilla <code>JavaScript</code>.</p>
-            </section>
-
-            <section id="installation">
-                <h2>Installation</h2>
-                <p>To get started, clone the repository to your local machine.</p>
-                <pre><code>git clone https://github.com/username/project.git
-cd project
-npm install</code></pre>
-            </section>
-
-            <section id="usage">
-                <h2>Basic Usage</h2>
-                <p>Run the build command to compile your static assets.</p>
-                <blockquote>
-                    <strong>Note:</strong> Ensure you have Node.js version 14 or higher installed.
-                </blockquote>
-            </section>
-
-            <section id="configuration">
-                <h2>Configuration</h2>
-                <p>You can configure the project by editing the <code>config.json</code> file.</p>
-            </section>
-        </main>
+    <!-- Контейнер з фіксованою бічною панеллю та основним контентом -->
+    <div class="container">
+      <aside class="sidebar">
+        <ul>
+          <li><a href="#chapter1">Глава&nbsp;1:&nbsp;Вступ</a></li>
+          <li><a href="#chapter2">Глава&nbsp;2:&nbsp;Основи</a></li>
+          <li><a href="#chapter3">Глава&nbsp;3:&nbsp;Приклад</a></li>
+        </ul>
+      </aside>
+      <main class="content" id="content-area">
+        <!-- Приклади розділів посібника. Адміністратор може редагувати ці блоки. -->
+        <section id="chapter1">
+          <h2>Глава&nbsp;1:&nbsp;Вступ</h2>
+          <p>
+            Цей розділ знайомить вас з темою посібника. Тут коротко описано
+            основні принципи та терміни.
+          </p>
+        </section>
+        <section id="chapter2">
+          <h2>Глава&nbsp;2:&nbsp;Основи</h2>
+          <p>
+            У цьому розділі наведені основні концепції та інструкції. Спробуйте
+            прочитати уважно.
+          </p>
+        </section>
+        <section id="chapter3">
+          <h2>Глава&nbsp;3:&nbsp;Приклад</h2>
+          <p>
+            Тут наведено приклади практичного застосування інформації з
+            попередніх розділів.
+          </p>
+        </section>
+      </main>
     </div>
 
-    <div class="chat-widget">
-        <button id="chat-toggle-btn" class="chat-toggle-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        </button>
+    <!-- Плаваюча кнопка для відкриття чату з ШІ -->
+    <button id="chat-toggle" class="chat-toggle">Чат</button>
 
-        <div id="chat-window" class="chat-window hidden">
-            <div class="chat-header">
-                <span>AI Assistant</span>
-                <button id="close-chat">×</button>
-            </div>
-            
-            <div id="api-key-container" class="api-key-container">
-                <p>Enter OpenAI API Key to chat with this guide:</p>
-                <input type="password" id="api-key-input" placeholder="sk-..." />
-                <button id="save-key-btn">Start Chat</button>
-            </div>
+    <!-- Вікно чату ШІ. Заховане за замовчуванням. -->
+    <div id="chat-container" class="chat-container hidden">
+      <div class="chat-header">
+        <span>Асистент&nbsp;ШІ</span>
+        <button id="chat-close" class="chat-close">&times;</button>
+      </div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Введіть запит…" />
+        <button id="send-button">Надіслати</button>
+      </div>
+    </div>
 
-            <div id="chat-interface" class="chat-interface hidden">
-                <div id="chat-messages" class="chat-messages">
-                    <div class="message bot">
-                        Hello! I've read the documentation on this page. Ask me anything about it.
-                    </div>
-                </div>
-                <div class="chat-input-area">
-                    <input type="text" id="user-input" placeholder="Ask a question..." />
-                    <button id="send-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                    </button>
-                </div>
-            </div>
+    <!-- Модальне вікно для авторизації адміністратора -->
+    <div id="login-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Вхід</h2>
+        <label for="username">Логін</label>
+        <input type="text" id="username" />
+        <label for="password">Пароль</label>
+        <input type="password" id="password" />
+        <div class="modal-buttons">
+          <button id="login-submit">Увійти</button>
+          <button id="login-cancel">Скасувати</button>
         </div>
+      </div>
     </div>
+
+    <!-- Кнопка для збереження змін. Показується тільки в режимі редагування -->
+    <button id="save-button" class="save-button hidden">Зберегти&nbsp;зміни</button>
 
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
