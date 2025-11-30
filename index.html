@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Посібник</title>
+    <title>Мій посібник</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- Верхній заголовок -->
+    <!-- Верхній хедер -->
     <header class="header">
       <div class="logo">Мій&nbsp;Посібник</div>
       <nav class="nav">
@@ -16,42 +16,44 @@
       </nav>
     </header>
 
-    <!-- Кнопка відкриття/закриття бічної панелі -->
+    <!-- Кнопка відкриття/закриття лівої шторки -->
     <button id="sidebar-toggle" class="sidebar-toggle">☰</button>
 
-    <!-- Основний контейнер -->
+    <!-- Основний макет -->
     <div class="container">
+      <!-- Ліва шторка (спочатку закрита через клас collapsed) -->
       <aside id="sidebar" class="sidebar collapsed">
         <div id="article-list" class="article-list"></div>
-        <button id="new-article-button" class="new-article-button hidden">
+
+        <button
+          id="new-article-button"
+          class="new-article-button hidden"
+        >
           +&nbsp;Новий&nbsp;посібник
         </button>
       </aside>
+
+      <!-- Основний контент -->
       <main class="content" id="content-area">
-        <div
-          id="editor-toolbar"
-          class="toolbar hidden"
-        >
+        <!-- Панель інструментів для адміна -->
+        <div id="editor-toolbar" class="toolbar hidden">
           <button data-command="bold" title="Жирний">B</button>
           <button data-command="underline" title="Підкреслення">U</button>
           <button data-command="strikeThrough" title="Закреслення">S</button>
-          <label class="icon-upload" title="Змінити іконку">
+          <label class="icon-upload" title="Іконка теми">
             🖼
-            <input
-              type="file"
-              id="icon-input"
-              accept="image/*"
-              hidden
-            />
+            <input type="file" id="icon-input" accept="image/*" hidden />
           </label>
         </div>
+
+        <!-- Відображення обраного посібника -->
         <div id="article-view" class="article-view">
-          <h2 id="article-title"></h2>
           <img
             id="article-icon"
             class="article-icon hidden"
-            alt=""
+            alt="Іконка теми"
           />
+          <h2 id="article-title"></h2>
           <p id="article-description" class="article-description"></p>
           <div
             id="article-content"
@@ -62,8 +64,10 @@
       </main>
     </div>
 
-    <!-- Вікно чату -->
+    <!-- Плаваюча кнопка чату -->
     <button id="chat-toggle" class="chat-toggle">Чат</button>
+
+    <!-- Вікно чату -->
     <div id="chat-container" class="chat-container hidden">
       <div class="chat-header">
         <span>Асистент&nbsp;ШІ</span>
@@ -76,7 +80,7 @@
       </div>
     </div>
 
-    <!-- Модальне вікно авторизації -->
+    <!-- Модалка логіну -->
     <div id="login-modal" class="modal hidden">
       <div class="modal-content">
         <h2>Вхід</h2>
@@ -84,6 +88,7 @@
         <input type="text" id="username" />
         <label for="password">Пароль</label>
         <input type="password" id="password" />
+
         <div class="modal-buttons">
           <button id="login-submit">Увійти</button>
           <button id="login-cancel">Скасувати</button>
@@ -91,7 +96,7 @@
       </div>
     </div>
 
-    <!-- Кнопка збереження змін -->
+    <!-- Кнопка збереження всіх змін -->
     <button id="save-button" class="save-button hidden">
       Зберегти&nbsp;зміни
     </button>
