@@ -1,302 +1,345 @@
 /*
-  Логіка сайту: авторизація адміністратора, керування посібниками,
-  форматування тексту, вибір іконки для теми, інтеграція з Gemini API
-  і збереження даних у localStorage.
-  УВАГА! API‑ключ у коді є публічним лише для демонстрації.
+  Логіка:
+  - авторизація адміна (admin / Luka@2016)
+  - створення / вибір посібників
+  - редагування тексту + форматування + іконка
+  - збереження всього (масив посібників) у localStorage
+  - чат з Gemini (gemini-1.5-flash)
 */
-document.addEventListener('DOMContentLoaded', () => {
-  // Елементи авторизації
-  const loginButton = document.getElementById('login-button');
-  const adminButton = document.getElementById('admin-button');
-  const loginModal = document.getElementById('login-modal');
-  const loginSubmit = document.getElementById('login-submit');
-  const loginCancel = document.getElementById('login-cancel');
-  const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
-  const saveButton = document.getElementById('save-button');
 
-  // Елементи посібника
-  const sidebar = document.getElementById('sidebar');
-  const sidebarToggle = document.getElementById('sidebar-toggle');
-  const articleListEl = document.getElementById('article-list');
-  const newArticleButton = document.getElementById('new-article-button');
-  const articleTitleEl = document.getElementById('article-title');
-  const articleDescriptionEl = document.getElementById('article-description');
-  const articleContentEl = document.getElementById('article-content');
-  const articleIconEl = document.getElementById('article-icon');
-  const editorToolbar = document.getElementById('editor-toolbar');
-  const iconInput = document.getElementById('icon-input');
+document.addEventListener("DOMContentLoaded", () => {
+  // Авторизація
+  const loginButton = document.getElementById("login-button");
+  const adminButton = document.getElementById("admin-button");
+  const loginModal = document.getElementById("login-modal");
+  const loginSubmit = document.getElementById("login-submit");
+  const loginCancel = document.getElementById("login-cancel");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const saveButton = document.getElementById("save-button");
 
-  // Елементи чату
-  const chatToggle = document.getElementById('chat-toggle');
-  const chatContainer = document.getElementById('chat-container');
-  const chatClose = document.getElementById('chat-close');
-  const sendButton = document.getElementById('send-button');
-  const userInput = document.getElementById('user-input');
-  const chatMessages = document.getElementById('chat-messages');
+  // Sidebar / контент
+  const sidebar = document.getElementById("sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  const articleListEl = document.getElementById("article-list");
+  const newArticleButton = document.getElementById("new-article-button");
+
+  const articleTitleEl = document.getElementById("article-title");
+  const articleDescriptionEl = document.getElementById("article-description");
+  const articleContentEl = document.getElementById("article-content");
+  const articleIconEl = document.getElementById("article-icon");
+
+  const editorToolbar = document.getElementById("editor-toolbar");
+  const iconInput = document.getElementById("icon-input");
+
+  // Чат
+  const chatToggle = document.getElementById("chat-toggle");
+  const chatContainer = document.getElementById("chat-container");
+  const chatClose = document.getElementById("chat-close");
+  const sendButton = document.getElementById("send-button");
+  const userInput = document.getElementById("user-input");
+  const chatMessages = document.getElementById("chat-messages");
 
   let isAdmin = false;
   let articles = [];
   let currentArticleId = null;
 
-  // Завантажити посібники з localStorage
+  // ---------- ЗАГРУЗКА / ЗБЕРЕЖЕННЯ ----------
+
   function loadArticles() {
     try {
-      articles = JSON.parse(localStorage.getItem('articles')) || [];
-    } catch {
+      const raw = localStorage.getItem("articles");
+      articles = raw ? JSON.parse(raw) : [];
+    } catch (e) {
       articles = [];
     }
   }
+
   function saveArticles() {
-    localStorage.setItem('articles', JSON.stringify(articles));
+    localStorage.setItem("articles", JSON.stringify(articles));
   }
 
-  // Відобразити список посібників
+  // ---------- РЕНДЕР СПИСКУ ПОСІБНИКІВ ----------
+
   function renderArticleList() {
-    articleListEl.innerHTML = '';
+    articleListEl.innerHTML = "";
+
     if (articles.length === 0) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.textContent = 'Немає посібників';
-      emptyMsg.style.color = '#666666';
-      articleListEl.appendChild(emptyMsg);
+      const empty = document.createElement("div");
+      empty.textContent = "Немає посібників";
+      empty.style.color = "#666";
+      articleListEl.appendChild(empty);
     } else {
-      articles.forEach((article) => {
-        const item = document.createElement('div');
-        item.classList.add('article-item');
+      articles.forEach((article, index) => {
+        const item = document.createElement("div");
+        item.classList.add("article-item");
         if (article.id === currentArticleId) {
-          item.classList.add('active');
+          item.classList.add("active");
         }
         item.innerHTML =
-          '<strong>' +
+          "<strong>" +
           article.title +
-          '</strong><br/><small>' +
-          (article.description || '') +
-          '</small>';
-        item.addEventListener('click', () => {
+          "</strong><br><small>" +
+          (article.description || "") +
+          "</small>";
+
+        item.addEventListener("click", () => {
           selectArticle(article.id);
         });
+
         articleListEl.appendChild(item);
       });
     }
+
     if (isAdmin) {
-      newArticleButton.classList.remove('hidden');
+      newArticleButton.classList.remove("hidden");
     } else {
-      newArticleButton.classList.add('hidden');
+      newArticleButton.classList.add("hidden");
     }
   }
 
-  // Відобразити вибрану статтю
+  // ---------- ВИБІР ПОСІБНИКА ----------
+
   function selectArticle(id) {
     const article = articles.find((a) => a.id === id);
     if (!article) return;
-    currentArticleId = id;
-    Array.from(articleListEl.children).forEach((child) =>
-      child.classList.remove('active')
-    );
-    const index = articles.findIndex((a) => a.id === id);
-    const activeEl = articleListEl.children[index];
-    if (activeEl) activeEl.classList.add('active');
 
+    currentArticleId = id;
+
+    // Підсвітка активного
+    Array.from(articleListEl.children).forEach((el) =>
+      el.classList.remove("active")
+    );
+    const idx = articles.findIndex((a) => a.id === id);
+    if (idx >= 0 && articleListEl.children[idx]) {
+      articleListEl.children[idx].classList.add("active");
+    }
+
+    // Заповнюємо поля
     articleTitleEl.textContent = article.title;
-    articleDescriptionEl.textContent = article.description;
+    articleDescriptionEl.textContent = article.description || "";
+    articleContentEl.innerHTML = article.content || "";
+
     if (article.icon) {
       articleIconEl.src = article.icon;
-      articleIconEl.classList.remove('hidden');
+      articleIconEl.classList.remove("hidden");
     } else {
-      articleIconEl.classList.add('hidden');
+      articleIconEl.classList.add("hidden");
     }
-    articleContentEl.innerHTML = article.content || '';
+
     if (isAdmin) {
-      articleContentEl.setAttribute('contenteditable', 'true');
-      editorToolbar.classList.remove('hidden');
+      articleContentEl.setAttribute("contenteditable", "true");
+      editorToolbar.classList.remove("hidden");
     } else {
-      articleContentEl.setAttribute('contenteditable', 'false');
-      editorToolbar.classList.add('hidden');
+      articleContentEl.setAttribute("contenteditable", "false");
+      editorToolbar.classList.add("hidden");
     }
   }
 
-  // Створити нову статтю
+  // ---------- СТВОРЕННЯ НОВОГО ПОСІБНИКА ----------
+
   function createNewArticle() {
-    const title = prompt('Введіть назву посібника');
+    const title = prompt("Введіть назву посібника");
     if (!title) return;
-    const description = prompt('Введіть короткий опис (необов’язково)') || '';
-    const id = Date.now();
-    const newArticle = {
-      id,
+    const description =
+      prompt("Введіть короткий опис (необов’язково)") || "";
+
+    const article = {
+      id: Date.now(),
       title,
       description,
-      icon: '',
-      content: '<p>Новий посібник...</p>',
+      icon: "",
+      content: "<p>Новий посібник...</p>",
     };
-    articles.push(newArticle);
+
+    articles.push(article);
     saveArticles();
     renderArticleList();
-    selectArticle(id);
+    selectArticle(article.id);
   }
 
-  // Зберегти поточну статтю
+  // ---------- ЗБЕРЕЖЕННЯ ПОТОЧНОГО ----------
+
   function saveCurrentArticle() {
     if (!isAdmin || currentArticleId === null) return;
     const article = articles.find((a) => a.id === currentArticleId);
     if (!article) return;
+
     article.title = articleTitleEl.textContent;
     article.description = articleDescriptionEl.textContent;
     article.content = articleContentEl.innerHTML;
+
     saveArticles();
     renderArticleList();
   }
 
-  // Перемикання бічної панелі
-  sidebarToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
+  // ---------- ОБРОБКА КНОПОК ----------
+
+  sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
   });
 
-  newArticleButton.addEventListener('click', () => {
+  newArticleButton.addEventListener("click", () => {
     createNewArticle();
   });
 
-  saveButton.addEventListener('click', () => {
+  saveButton.addEventListener("click", () => {
     saveCurrentArticle();
-    alert('Зміни збережено.');
+    alert("Зміни збережено.");
   });
 
-  // Авторизація
-  loginButton.addEventListener('click', () => {
-    loginModal.classList.remove('hidden');
+  // ---------- ЛОГІН АДМІНА ----------
+
+  loginButton.addEventListener("click", () => {
+    loginModal.classList.remove("hidden");
   });
-  loginCancel.addEventListener('click', () => {
-    loginModal.classList.add('hidden');
-    usernameInput.value = '';
-    passwordInput.value = '';
+
+  loginCancel.addEventListener("click", () => {
+    loginModal.classList.add("hidden");
+    usernameInput.value = "";
+    passwordInput.value = "";
   });
-  loginSubmit.addEventListener('click', () => {
+
+  loginSubmit.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
-    if (username === 'admin' && password === 'Luka@2016') {
+
+    if (username === "admin" && password === "Luka@2016") {
       isAdmin = true;
-      loginModal.classList.add('hidden');
-      loginButton.classList.add('hidden');
-      adminButton.classList.remove('hidden');
-      saveButton.classList.remove('hidden');
-      newArticleButton.classList.remove('hidden');
+      loginModal.classList.add("hidden");
+      loginButton.classList.add("hidden");
+      adminButton.classList.remove("hidden");
+      saveButton.classList.remove("hidden");
+      newArticleButton.classList.remove("hidden");
+
       if (currentArticleId !== null) {
-        articleContentEl.setAttribute('contenteditable', 'true');
-        editorToolbar.classList.remove('hidden');
+        articleContentEl.setAttribute("contenteditable", "true");
+        editorToolbar.classList.remove("hidden");
       }
     } else {
-      alert('Неправильні облікові дані.');
+      alert("Неправильні облікові дані.");
     }
   });
 
-  adminButton.addEventListener('click', () => {
+  adminButton.addEventListener("click", () => {
     if (!isAdmin) return;
-    editorToolbar.classList.toggle('hidden');
+    editorToolbar.classList.toggle("hidden");
   });
 
-  // Форматування тексту
-  editorToolbar.addEventListener('click', (e) => {
-    const command = e.target.getAttribute('data-command');
-    if (command) {
-      document.execCommand(command, false, null);
-      e.preventDefault();
-    }
+  // ---------- ТЕКСТОВИЙ ТУЛБАР (B, U, S) ----------
+
+  editorToolbar.addEventListener("click", (e) => {
+    const command = e.target.getAttribute("data-command");
+    if (!command) return;
+    // Використовуємо старий, але простий execCommand
+    document.execCommand(command, false, null);
   });
 
-  // Завантаження іконки
-  iconInput.addEventListener('change', (e) => {
+  // ---------- ІКОНКА ТЕМИ ----------
+
+  iconInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
-    if (!file) return;
+    if (!file || currentArticleId === null) return;
+
     const reader = new FileReader();
-    reader.onload = function (evt) {
-      const dataUrl = evt.target.result.toString();
-      if (currentArticleId !== null) {
-        const article = articles.find((a) => a.id === currentArticleId);
-        if (article) {
-          article.icon = dataUrl;
-          articleIconEl.src = dataUrl;
-          articleIconEl.classList.remove('hidden');
-          saveArticles();
-          renderArticleList();
-        }
-      }
+    reader.onload = (evt) => {
+      const dataUrl = String(evt.target.result);
+      const article = articles.find((a) => a.id === currentArticleId);
+      if (!article) return;
+      article.icon = dataUrl;
+      articleIconEl.src = dataUrl;
+      articleIconEl.classList.remove("hidden");
+      saveArticles();
+      renderArticleList();
     };
     reader.readAsDataURL(file);
   });
 
-  // Початкове завантаження
-  loadArticles();
-  renderArticleList();
-  if (articles.length > 0) {
-    selectArticle(articles[0].id);
-  }
+  // ---------- ЧАТ ----------
 
-  // Чат: відкриття і закриття
-  chatToggle.addEventListener('click', () => {
-    chatContainer.classList.remove('hidden');
-  });
-  chatClose.addEventListener('click', () => {
-    chatContainer.classList.add('hidden');
+  chatToggle.addEventListener("click", () => {
+    chatContainer.classList.remove("hidden");
   });
 
-  // Чат: надсилання
-  function addMessage(text, sender) {
-    const msg = document.createElement('div');
-    msg.classList.add('message', sender);
-    msg.textContent = text;
-    chatMessages.appendChild(msg);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-  async function sendMessage() {
-    const query = userInput.value.trim();
-    if (!query) return;
-    addMessage(query, 'user');
-    userInput.value = '';
-    try {
-      const response = await callGeminiAPI(query);
-      addMessage(response, 'assistant');
-    } catch {
-      addMessage('Помилка при отриманні відповіді.', 'assistant');
-    }
-  }
-  sendButton.addEventListener('click', () => {
+  chatClose.addEventListener("click", () => {
+    chatContainer.classList.add("hidden");
+  });
+
+  sendButton.addEventListener("click", () => {
     sendMessage();
   });
-  userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
       e.preventDefault();
       sendMessage();
     }
   });
 
+  function addMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.classList.add("message", sender);
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const query = userInput.value.trim();
+    if (!query) return;
+
+    addMessage(query, "user");
+    userInput.value = "";
+
+    try {
+      const reply = await callGeminiAPI(query);
+      addMessage(reply, "assistant");
+    } catch (e) {
+      console.error(e);
+      addMessage("Помилка при отриманні відповіді.", "assistant");
+    }
+  }
+
   // Виклик Gemini API
   async function callGeminiAPI(prompt) {
-    const apiKey = 'AIzaSyDVfi0aGOBxzXbHdkNOAwPKloU13YymJJ4';
+    // УВАГА: тримати ключ у фронтенді небезпечно, це лише для демо.
+    const apiKey = "AIzaSyDVfi0aGOBxzXbHdkNOAwPKloU13YymJJ4";
     const url =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-    const payload = {
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
+      encodeURIComponent(apiKey);
+
+    const body = {
       contents: [
         {
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
+          parts: [{ text: prompt }],
         },
       ],
     };
+
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
+
     const data = await res.json();
+
     if (data && data.candidates && data.candidates.length > 0) {
-      const parts = data.candidates[0].content.parts;
-      return parts.map((p) => p.text).join('\n');
+      const parts = data.candidates[0].content.parts || [];
+      return parts.map((p) => p.text || "").join("\n").trim() || "Без відповіді.";
     }
-    return 'Без відповіді.';
+
+    return "Без відповіді.";
+  }
+
+  // ---------- ІНІЦІАЛІЗАЦІЯ ----------
+
+  loadArticles();
+  renderArticleList();
+
+  if (articles.length > 0) {
+    selectArticle(articles[0].id);
   }
 });
