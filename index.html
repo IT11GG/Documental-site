@@ -7,56 +7,63 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- Верхній заголовок з назвою сайту та кнопками навігації -->
+    <!-- Верхній заголовок -->
     <header class="header">
       <div class="logo">Мій&nbsp;Посібник</div>
       <nav class="nav">
-        <!-- Кнопка для переходу у режим редагування з’являється після авторизації -->
         <button id="admin-button" class="admin-button hidden">Редагувати</button>
-        <!-- Кнопка входу для адміністратора -->
         <button id="login-button" class="login-button">Увійти</button>
       </nav>
     </header>
 
-    <!-- Контейнер з фіксованою бічною панеллю та основним контентом -->
+    <!-- Кнопка відкриття/закриття бічної панелі -->
+    <button id="sidebar-toggle" class="sidebar-toggle">☰</button>
+
+    <!-- Основний контейнер -->
     <div class="container">
-      <aside class="sidebar">
-        <ul>
-          <li><a href="#chapter1">Глава&nbsp;1:&nbsp;Вступ</a></li>
-          <li><a href="#chapter2">Глава&nbsp;2:&nbsp;Основи</a></li>
-          <li><a href="#chapter3">Глава&nbsp;3:&nbsp;Приклад</a></li>
-        </ul>
+      <aside id="sidebar" class="sidebar collapsed">
+        <div id="article-list" class="article-list"></div>
+        <button id="new-article-button" class="new-article-button hidden">
+          +&nbsp;Новий&nbsp;посібник
+        </button>
       </aside>
       <main class="content" id="content-area">
-        <!-- Приклади розділів посібника. Адміністратор може редагувати ці блоки. -->
-        <section id="chapter1">
-          <h2>Глава&nbsp;1:&nbsp;Вступ</h2>
-          <p>
-            Цей розділ знайомить вас з темою посібника. Тут коротко описано
-            основні принципи та терміни.
-          </p>
-        </section>
-        <section id="chapter2">
-          <h2>Глава&nbsp;2:&nbsp;Основи</h2>
-          <p>
-            У цьому розділі наведені основні концепції та інструкції. Спробуйте
-            прочитати уважно.
-          </p>
-        </section>
-        <section id="chapter3">
-          <h2>Глава&nbsp;3:&nbsp;Приклад</h2>
-          <p>
-            Тут наведено приклади практичного застосування інформації з
-            попередніх розділів.
-          </p>
-        </section>
+        <div
+          id="editor-toolbar"
+          class="toolbar hidden"
+        >
+          <button data-command="bold" title="Жирний">B</button>
+          <button data-command="underline" title="Підкреслення">U</button>
+          <button data-command="strikeThrough" title="Закреслення">S</button>
+          <label class="icon-upload" title="Змінити іконку">
+            🖼
+            <input
+              type="file"
+              id="icon-input"
+              accept="image/*"
+              hidden
+            />
+          </label>
+        </div>
+        <div id="article-view" class="article-view">
+          <h2 id="article-title"></h2>
+          <img
+            id="article-icon"
+            class="article-icon hidden"
+            alt=""
+          />
+          <p id="article-description" class="article-description"></p>
+          <div
+            id="article-content"
+            class="article-content"
+            contenteditable="false"
+          ></div>
+        </div>
       </main>
     </div>
 
-    <!-- Плаваюча кнопка для відкриття чату з ШІ -->
+    <!-- Вікно чату -->
     <button id="chat-toggle" class="chat-toggle">Чат</button>
-
-    <!-- Вікно чату ШІ. Заховане за замовчуванням. -->
     <div id="chat-container" class="chat-container hidden">
       <div class="chat-header">
         <span>Асистент&nbsp;ШІ</span>
@@ -69,7 +76,7 @@
       </div>
     </div>
 
-    <!-- Модальне вікно для авторизації адміністратора -->
+    <!-- Модальне вікно авторизації -->
     <div id="login-modal" class="modal hidden">
       <div class="modal-content">
         <h2>Вхід</h2>
@@ -84,8 +91,10 @@
       </div>
     </div>
 
-    <!-- Кнопка для збереження змін. Показується тільки в режимі редагування -->
-    <button id="save-button" class="save-button hidden">Зберегти&nbsp;зміни</button>
+    <!-- Кнопка збереження змін -->
+    <button id="save-button" class="save-button hidden">
+      Зберегти&nbsp;зміни
+    </button>
 
     <script src="script.js"></script>
   </body>
