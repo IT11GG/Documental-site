@@ -1,143 +1,191 @@
+/*
+  script.js містить логіку для: 
+  – авторизації адміністратора та вмикання режиму редагування;
+  – збереження зміненого контенту в localStorage;
+  – інтеграції з Gemini API для чату з ШІ (flash-модель);
+  – відкриття та закриття модального вікна чату та вікна авторизації.
+
+  УВАГА! Включення секретного ключа безпосередньо у коді є небезпечною практикою, 
+  але для цього демонстраційного проєкту ключ вставлено у відкритому вигляді.
+*/
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Elements ---
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const chatToggleBtn = document.getElementById('chat-toggle-btn');
-    const chatWindow = document.getElementById('chat-window');
-    const closeChatBtn = document.getElementById('close-chat');
-    const apiKeyContainer = document.getElementById('api-key-container');
-    const apiKeyInput = document.getElementById('api-key-input');
-    const saveKeyBtn = document.getElementById('save-key-btn');
-    const chatInterface = document.getElementById('chat-interface');
-    const chatMessages = document.getElementById('chat-messages');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+  // Елементи для авторизації
+  const loginButton = document.getElementById('login-button');
+  const adminButton = document.getElementById('admin-button');
+  const loginModal = document.getElementById('login-modal');
+  const loginSubmit = document.getElementById('login-submit');
+  const loginCancel = document.getElementById('login-cancel');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const saveButton = document.getElementById('save-button');
+  const contentArea = document.getElementById('content-area');
 
-    let apiKey = sessionStorage.getItem('openai_api_key');
+  // Елементи чату
+  const chatToggle = document.getElementById('chat-toggle');
+  const chatContainer = document.getElementById('chat-container');
+  const chatClose = document.getElementById('chat-close');
+  const sendButton = document.getElementById('send-button');
+  const userInput = document.getElementById('user-input');
+  const chatMessages = document.getElementById('chat-messages');
 
-    // --- Sidebar Logic ---
-    menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-    });
+  // Відновити збережений контент при завантаженні сторінки
+  const savedContent = localStorage.getItem('savedContent');
+  if (savedContent) {
+    contentArea.innerHTML = savedContent;
+  }
 
-    // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && 
-            !sidebar.contains(e.target) && 
-            !menuToggle.contains(e.target) && 
-            sidebar.classList.contains('open')) {
-            sidebar.classList.remove('open');
-        }
-    });
+  /**
+   * Показати модальне вікно авторизації
+   */
+  loginButton.addEventListener('click', () => {
+    loginModal.classList.remove('hidden');
+  });
 
-    // --- Chat Widget Toggle ---
-    chatToggleBtn.addEventListener('click', () => {
-        chatWindow.classList.toggle('hidden');
-        checkApiKey();
-    });
+  /**
+   * Скасувати авторизацію та сховати модальне вікно
+   */
+  loginCancel.addEventListener('click', () => {
+    loginModal.classList.add('hidden');
+    usernameInput.value = '';
+    passwordInput.value = '';
+  });
 
-    closeChatBtn.addEventListener('click', () => {
-        chatWindow.classList.add('hidden');
-    });
-
-    // --- API Key Management ---
-    function checkApiKey() {
-        if (apiKey) {
-            apiKeyContainer.classList.add('hidden');
-            chatInterface.classList.remove('hidden');
-        } else {
-            apiKeyContainer.classList.remove('hidden');
-            chatInterface.classList.add('hidden');
-        }
+  /**
+   * Перевірити облікові дані. Якщо вони правильні, активувати режим редагування.
+   */
+  loginSubmit.addEventListener('click', () => {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    if (username === 'admin' && password === 'Luka@2016') {
+      // Авторизація успішна
+      loginModal.classList.add('hidden');
+      loginButton.classList.add('hidden');
+      adminButton.classList.remove('hidden');
+      saveButton.classList.remove('hidden');
+      enableEditing();
+    } else {
+      alert('Неправильні облікові дані.');
     }
+  });
 
-    saveKeyBtn.addEventListener('click', () => {
-        const key = apiKeyInput.value.trim();
-        if (key.startsWith('sk-')) {
-            apiKey = key;
-            sessionStorage.setItem('openai_api_key', key);
-            checkApiKey();
-        } else {
-            alert('Please enter a valid OpenAI API Key starting with sk-');
-        }
+  /**
+   * Вмикає режим редагування для контенту, роблячи елементи редагованими.
+   */
+  function enableEditing() {
+    // Увімкнути атрибут contenteditable для заголовків та абзаців
+    contentArea.querySelectorAll('section, p, h2').forEach((elem) => {
+      elem.setAttribute('contenteditable', 'true');
     });
+  }
 
-    // --- Chat Logic ---
-    function addMessage(text, sender) {
-        const div = document.createElement('div');
-        div.classList.add('message', sender);
-        div.innerText = text; // Safe text insertion
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return div;
+  /**
+   * Зберегти змінений контент у локальному сховищі браузера
+   */
+  saveButton.addEventListener('click', () => {
+    const newContent = contentArea.innerHTML;
+    localStorage.setItem('savedContent', newContent);
+    alert('Зміни збережено.');
+  });
+
+  /**
+   * Відкрити вікно чату
+   */
+  chatToggle.addEventListener('click', () => {
+    chatContainer.classList.remove('hidden');
+  });
+
+  /**
+   * Закрити вікно чату
+   */
+  chatClose.addEventListener('click', () => {
+    chatContainer.classList.add('hidden');
+  });
+
+  /**
+   * Надіслати повідомлення при натисканні кнопки
+   */
+  sendButton.addEventListener('click', () => {
+    sendMessage();
+  });
+
+  /**
+   * Надіслати повідомлення при натисканні Enter
+   */
+  userInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
     }
+  });
 
-    function getPageContent() {
-        // Simple scraper to get the context of the guide
-        const content = document.querySelector('.content').innerText;
-        return content.substring(0, 10000); // Limit tokens roughly
+  /**
+   * Додає повідомлення у вікно чату
+   * @param {string} text Текст повідомлення
+   * @param {string} sender Відправник ('user' або 'assistant')
+   */
+  function addMessage(text, sender) {
+    const msg = document.createElement('div');
+    msg.classList.add('message', sender);
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    // Автопрокрутка вниз
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  /**
+   * Відправити запит до ШІ та відобразити відповідь
+   */
+  async function sendMessage() {
+    const query = userInput.value.trim();
+    if (!query) {
+      return;
     }
-
-    async function handleChat() {
-        const text = userInput.value.trim();
-        if (!text || !apiKey) return;
-
-        // 1. Add User Message
-        addMessage(text, 'user');
-        userInput.value = '';
-
-        // 2. Add Loading Indicator
-        const loadingDiv = addMessage('Thinking', 'bot');
-        loadingDiv.classList.add('loading-dots');
-
-        // 3. Prepare System Prompt with Context
-        const pageContext = getPageContent();
-        const systemPrompt = `You are a helpful documentation assistant. 
-        Answer the user's question based strictly on the following content from the guide:
-        
-        --- START CONTENT ---
-        ${pageContext}
-        --- END CONTENT ---
-        
-        If the answer is not in the content, say you don't know.`;
-
-        try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: text }
-                    ],
-                    temperature: 0.5
-                })
-            });
-
-            const data = await response.json();
-
-            // Remove loading div
-            chatMessages.removeChild(loadingDiv);
-
-            if (data.error) {
-                addMessage(`Error: ${data.error.message}`, 'bot');
-            } else {
-                const reply = data.choices[0].message.content;
-                addMessage(reply, 'bot');
-            }
-
-        } catch (error) {
-            chatMessages.removeChild(loadingDiv);
-            addMessage(`Network Error: ${error.message}`, 'bot');
-        }
+    // Додати повідомлення користувача
+    addMessage(query, 'user');
+    userInput.value = '';
+    try {
+      // Отримати відповідь від моделі Gemini
+      const response = await callGeminiAPI(query);
+      addMessage(response, 'assistant');
+    } catch (error) {
+      addMessage('Помилка при отриманні відповіді.', 'assistant');
     }
+  }
 
-    sendBtn.addEventListener('click', handleChat);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleChat();
+  /**
+   * Запит до Gemini API (модель gemini-1.5-flash)
+   * @param {string} prompt Запит користувача
+   * @returns {Promise<string>} Відповідь від ШІ
+   */
+  async function callGeminiAPI(prompt) {
+    // УВАГА! Збереження ключа у відкритому коді небезпечно. Для реального проєкту
+    // використовуйте серверну частину або змінні оточення для захисту ключа.
+    const apiKey = 'AIzaSyDVfi0aGOBxzXbHdkNOAwPKloU13YymJJ4';
+    const url =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' +
+      encodeURIComponent(apiKey);
+    const body = {
+      contents: [
+        {
+          parts: [{ text: prompt }],
+        },
+      ],
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
     });
+    const data = await res.json();
+    // Обробка відповіді: вибрати текст з першого кандидата
+    if (data && data.candidates && data.candidates.length > 0) {
+      const parts = data.candidates[0].content.parts;
+      // Поєднати всі частини тексту, якщо вони є
+      return parts.map((p) => p.text).join('\n');
+    }
+    return 'Без відповіді.';
+  }
 });
